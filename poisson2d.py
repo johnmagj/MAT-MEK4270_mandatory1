@@ -20,6 +20,7 @@ class Poisson2D:
     """
 
     def __init__(self, L: float):
+        self.L = L
         self.p = Poisson(L)  # we can reuse some of the code from the 1D case
 
     def create_mesh(self, N: int) -> tuple[np.ndarray, np.ndarray]:
@@ -53,7 +54,12 @@ class Poisson2D:
         A : scipy sparse LIL matrix
             The vectorized Laplace operator
         """
-        raise NotImplementedError("The laplace method is not implemented yet.")
+        D2 = self.p.D2(N=N, dx=self.L/N)
+        # We do not strictly have to distinguish between D2x and D2y since N and L is the same for both x and y direction,
+        # however it makes the code a bit more readable mathematically to have D2x and D2y.
+        D2x = D2
+        D2y = D2
+        return (sparse.kron(D2x, sparse.eye(N+1)) + sparse.kron(sparse.eye(N+1), D2y))
 
     def assemble(
         self, N: int, f: sp.Expr, ue: sp.Expr
@@ -62,7 +68,7 @@ class Poisson2D:
 
         Parameters
         ----------
-        Nx : int
+        N : int
             The number of uniform intervals in both x and y directions
         f : Sympy expression
             The right hand side as a Sympy expression in x and y
@@ -83,7 +89,25 @@ class Poisson2D:
         vector b by evaluating the function f at the mesh points and applying
         Dirichlet boundary conditions using the exact solution ue.
 
+        Note to note: We calculate the 2d Laplacian matrix in function laplace
+
         """
+        # Create vectorized 2D Laplace matrix
+        A = self.laplace(N)
+
+        # Find the indices in the flatten u matrix that corresponds to the boundaries 
+        bnds = self.get_boundary_indices(N)
+        # Zero out every row A that has diagonal element corresponding to boundary in u
+        A = A.tolil()
+        for i in bnds:
+            A[i, :] = 0
+            A[i, i] = 1
+        A = A.tocsr()
+
+        # Flatten b and zero out the elements corresponding to boundary in u
+        b = F.ravel()
+        b[bnds] = 0
+        
         raise NotImplementedError("The assemble method is not implemented yet.")
 
     def meshfunction(self, u: sp.Expr, xij: np.ndarray, yij: np.ndarray) -> np.ndarray:
@@ -101,9 +125,10 @@ class Poisson2D:
 
     def get_boundary_indices(self, N: int) -> np.ndarray:
         """Return indices of vectorized matrix that belongs to the boundary"""
-        raise NotImplementedError(
-            "The get_boundary_indices method is not implemented yet."
-        )
+        B = np.ones((N+1, N+1), dtype=bool)
+        B[1:-1, 1:-1] = 0
+        bnds = np.where(B.ravel() == 1)[0]
+        return bnds
 
     def l2_error(self, u: np.ndarray, ue: sp.Expr) -> float:
         """Return l2-error

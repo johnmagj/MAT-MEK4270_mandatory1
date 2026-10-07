@@ -102,13 +102,23 @@ class Poisson2D:
         for i in bnds:
             A[i, :] = 0
             A[i, i] = 1
-        A = A.tocsr()
 
-        # Flatten b and zero out the elements corresponding to boundary in u
+        xij, yij = self.create_mesh(N)
+
+        # Turn the sympy expression f into the value matrix F. (Could have used ue to find f, but here f is supplied)
+        F = self.meshfunction(f, xij, yij)
+        # Turn the sympy expression ue into the value matrix Ue
+        Ue = self.meshfunction(ue, xij, yij)
+
+        # Flatten F and Ue
         b = F.ravel()
-        b[bnds] = 0
+        Ue_flat = Ue.ravel()
+
+        # This is MMS at work where we choose ue based on what boundary conditions we want,
+        # substituting the values of Ue_flat that corresponds to the boundary points into the same spot in the b vector.
+        b[bnds] = Ue_flat[bnds]
         
-        raise NotImplementedError("The assemble method is not implemented yet.")
+        return A.tocsr(), b
 
     def meshfunction(self, u: sp.Expr, xij: np.ndarray, yij: np.ndarray) -> np.ndarray:
         """Return Sympy function as mesh function
@@ -121,7 +131,9 @@ class Poisson2D:
         -------
         array - The input function as a mesh function
         """
-        raise NotImplementedError("The meshfunction method is not implemented yet.")
+        # Turn function u(x, y) into matrix with the grid values
+        U = sp.lambdify((x, y), u)(xij, yij)
+        return U
 
     def get_boundary_indices(self, N: int) -> np.ndarray:
         """Return indices of vectorized matrix that belongs to the boundary"""
@@ -145,7 +157,12 @@ class Poisson2D:
         float - The l2-error
 
         """
-        raise NotImplementedError("The l2_error method is not implemented yet.")
+        N = len(u) - 1
+        xij, yij = self.create_mesh(N)
+        Ue = self.meshfunction(ue, xij, yij)
+        dx = self.L/N
+        dy = self.L/N
+        return np.sqrt(dx*dy*np.sum((u - Ue)**2))
 
     def __call__(self, N: int, ue: sp.Expr) -> np.ndarray:
         """Solve Poisson's equation with a given manufactured solution
@@ -190,7 +207,26 @@ class Poisson2D:
         The value of u(x, y)
 
         """
-        raise NotImplementedError("The eval method is not implemented yet.")
+        from math import floor, ceil
+
+        Nx = U.shape[0]
+        Ny = U.shape[1]
+
+        dx = self.L/Nx
+        dy = self.L/Ny
+
+        i_down = floor(x/dx)
+        i_up = ceil(x/dx)
+
+        U[i_down*dx
+
+        j_down = floor(y/dx)
+        j_up = ceil(y/dx)
+
+
+
+        from scipy.interpolate import interpn
+        return interpn((xij[5:8, 0], yij[0, 5:8]), u2[5:8, 5:8], np.array([0.55, 0.65]))
 
 
 def test_convergence_poisson2d():

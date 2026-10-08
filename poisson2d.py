@@ -59,7 +59,9 @@ class Poisson2D:
         # however it makes the code a bit more readable mathematically to have D2x and D2y.
         D2x = D2
         D2y = D2
-        return (sparse.kron(D2x, sparse.eye(N+1)) + sparse.kron(sparse.eye(N+1), D2y))
+
+        A = (sparse.kron(D2x, sparse.eye(N+1)) + sparse.kron(sparse.eye(N+1), D2y))
+        return A
 
     def assemble(
         self, N: int, f: sp.Expr, ue: sp.Expr

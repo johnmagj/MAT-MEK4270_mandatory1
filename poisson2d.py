@@ -114,7 +114,7 @@ class Poisson2D:
         b = F.ravel()
         Ue_flat = Ue.ravel()
 
-        # This is MMS at work where we choose ue based on what boundary conditions we want,
+        # This is MMS at work where we pick a ue based on what boundary conditions we want (can be whatever we want),
         # substituting the values of Ue_flat that corresponds to the boundary points into the same spot in the b vector.
         b[bnds] = Ue_flat[bnds]
         
@@ -206,7 +206,7 @@ class Poisson2D:
         -------
         The value of u(x, y)
 
-        """
+        """        
         from math import floor, ceil
 
         Nx = U.shape[0]
@@ -215,18 +215,48 @@ class Poisson2D:
         dx = self.L/Nx
         dy = self.L/Ny
 
-        i_down = floor(x/dx)
-        i_up = ceil(x/dx)
+        i_in = x/dx
+        j_in = y/dy
 
-        U[i_down*dx
+        i_down1 = floor(i_in)
+        i_up1 = ceil(i_in)
+        j_down1 = floor(j_in)
+        j_up1 = ceil(j_in)
 
-        j_down = floor(y/dx)
-        j_up = ceil(y/dx)
+        # Array of four grid points, symmetric in both direction of (x,y)
+        is = np.array([i_down1 - 1, i_down1, i_up1, i_up1 + 1])
+        js = np.array([j_down1 - 1, j_down1, j_up1, j_up1 + 1])
+
+        def lagrangebasis(meshpoints, x_interpoints):
+            pp = []
+            for j in range(len(x_interpoints)):
+                p = 1
+                for m in range(len(x_interpoints)):
+                    if m == j:
+                        pass
+                    else:
+                        p *= (xs - x_interpoints[m])/(x_interpoints[j] - x_interpoints[m])
 
 
+        S = 0
+        for i in range(len(is)):
+            for j in range(len(js)):
+                S += U[i,j]*
 
-        from scipy.interpolate import interpn
-        return interpn((xij[5:8, 0], yij[0, 5:8]), u2[5:8, 5:8], np.array([0.55, 0.65]))
+        # Weight based on proximity to grid point
+        # i_down_weight = 1.0 - (x - i_down*dx)/dx
+        # i_up_weight = 1.0 - i_down_weight
+        # j_down_weight = 1.0 - (y - j_down*dy)/dy
+        # j_up_weight = 1.0 - j_down_weight
+        
+        # U_interpolated = (U[i_down, j_down]*i_down_weight*j_down_weight
+        #               + U[i_down, j_up]*i_down_weight*j_up_weight
+        #               + U[i_up, j_down]*i_up_weight*j_down_weight
+        #               + U[i_up, j_up]*i_up_weight*j_up_weight)
+
+
+        
+        return U_interpolated
 
 
 def test_convergence_poisson2d():

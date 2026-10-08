@@ -209,53 +209,33 @@ class Poisson2D:
         """        
         from math import floor, ceil
 
-        Nx = U.shape[0]
-        Ny = U.shape[1]
+        Nx = U.shape[0] - 1
+        Ny = U.shape[1] - 1
 
         dx = self.L/Nx
         dy = self.L/Ny
 
+        # Find the index (x,y) would have had given current grid step size
         i_in = x/dx
         j_in = y/dy
 
+        # Find the index number of the grid points closest to, and, surrounding (x,y) 
         i_down1 = floor(i_in)
         i_up1 = ceil(i_in)
         j_down1 = floor(j_in)
         j_up1 = ceil(j_in)
 
-        # Array of four grid points, symmetric in both direction of (x,y)
-        is = np.array([i_down1 - 1, i_down1, i_up1, i_up1 + 1])
-        js = np.array([j_down1 - 1, j_down1, j_up1, j_up1 + 1])
-
-        def lagrangebasis(meshpoints, x_interpoints):
-            pp = []
-            for j in range(len(x_interpoints)):
-                p = 1
-                for m in range(len(x_interpoints)):
-                    if m == j:
-                        pass
-                    else:
-                        p *= (xs - x_interpoints[m])/(x_interpoints[j] - x_interpoints[m])
-
-
-        S = 0
-        for i in range(len(is)):
-            for j in range(len(js)):
-                S += U[i,j]*
-
         # Weight based on proximity to grid point
-        # i_down_weight = 1.0 - (x - i_down*dx)/dx
-        # i_up_weight = 1.0 - i_down_weight
-        # j_down_weight = 1.0 - (y - j_down*dy)/dy
-        # j_up_weight = 1.0 - j_down_weight
+        i_down_weight = 1.0 - (x - i_down1*dx)/dx
+        i_up_weight = 1.0 - i_down_weight
+        j_down_weight = 1.0 - (y - j_down1*dy)/dy
+        j_up_weight = 1.0 - j_down_weight
         
-        # U_interpolated = (U[i_down, j_down]*i_down_weight*j_down_weight
-        #               + U[i_down, j_up]*i_down_weight*j_up_weight
-        #               + U[i_up, j_down]*i_up_weight*j_down_weight
-        #               + U[i_up, j_up]*i_up_weight*j_up_weight)
+        U_interpolated = (U[i_down1, j_down1]*i_down_weight*j_down_weight
+                      + U[i_down1, j_up1]*i_down_weight*j_up_weight
+                      + U[i_up1, j_down1]*i_up_weight*j_down_weight
+                      + U[i_up1, j_up1]*i_up_weight*j_up_weight)
 
-
-        
         return U_interpolated
 
 

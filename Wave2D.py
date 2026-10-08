@@ -2,6 +2,9 @@ import numpy as np
 import sympy as sp
 from scipy import sparse
 
+from poisson import Poisson
+from poisson2d import Poisson2D
+
 x, y, t = sp.symbols("x,y,t")
 
 
@@ -26,7 +29,10 @@ class Wave2D:
             The x-coordinates of the mesh
         yij : 2D array
             The y-coordinates of the mesh"""
-        raise NotImplementedError("The create_mesh method is not implemented yet.")
+
+        xij, yij = Poisson2D.create_mesh(N)
+        return xij, yij
+
 
     def D2(self, N: int) -> sparse.lil_matrix:
         """Return second order differentiation matrix
@@ -40,12 +46,18 @@ class Wave2D:
         D : scipy sparse LIL matrix
             The second order differentiation matrix
         """
-        raise NotImplementedError("The D2 method is not implemented yet.")
+        D = sparse.diags([1., -2., 1.], [-1, 0, 1], (N + 1, N + 1), format="lil")
+        D[0, :4] = 2, -5, 4, -1
+        D[-1, -4:] = -1, 4, -5, 2
+        return D
 
     @property
     def w(self):
         """Return the dispersion coefficient"""
-        raise NotImplementedError("The w property is not implemented yet.")
+
+        # omega = c*np.sqrt(k_x**2 + k_y**2)
+        omega = 1
+        return omega
 
     def ue(self, mx: int, my: int) -> sp.Expr:
         """Return the exact standing wave
@@ -71,12 +83,20 @@ class Wave2D:
         mx, my : int
             Parameters for the standing wave
         """
-        raise NotImplementedError("The initialize method is not implemented yet.")
+        t0 = 0
+        xij, yij = self.create_mesh(N)
+        ue = self.ue(mx=mx, my=my)
+
+        u0 = sp.lambdify((t, x, y), ue)(t0, xij, yij)
+        return u0
 
     @property
     def dt(self) -> float:
         """Return the time step"""
-        raise NotImplementedError("The dt property is not implemented yet.")
+        T = 10.0
+        N = 100
+        dt = T/N
+        return dt
 
     def l2_error(self, u: np.ndarray, t0: float) -> float:
         """Return l2-error norm
@@ -88,7 +108,19 @@ class Wave2D:
         t0 : number
             The time of the comparison
         """
-        raise NotImplementedError("The l2_error method is not implemented yet.")
+        N = u.shape[0] - 1
+        h = 1.0/N
+
+        # u is a 2d array of a given time point
+        Un = u
+
+        ue = self.ue(mx=self.mx, my=self.my)
+        xij, yij = self.create_mesh(N)
+        Un_e = sp.lambdify((t, x, y), ue)(t0, xij, yij)
+        
+        en_ij = Un - Un_e
+
+        return np.sqrt(h**2 * np.sum(en_ij**2))
 
     def apply_bcs(self, u: np.ndarray):
         """Apply boundary conditions to the solution mesh function
@@ -98,7 +130,10 @@ class Wave2D:
         u : array
             The solution mesh function
         """
-        raise NotImplementedError("The apply_bcs method is not implemented yet.")
+        u[0, :] = 0
+        u[-1, :] = 0 
+        u[:, 0] = 0
+        u[:, -1] = 0
 
     def __call__(
         self,
@@ -134,6 +169,32 @@ class Wave2D:
         If store_data > 0, then return a dictionary with key, value = timestep, solution
         If store_data == -1, then return the two-tuple (h, l2-error)
         """
+        xij, yij = self.create_mesh(N)
+        Unp1, Un, Unm1 = np.zeros((3, N+1, N+1))
+
+        u0 = self.initialize(N=N, mx=mx, my=my)
+        Unm1[:] = u0(0, xij, yij)
+
+        dt = self.dt
+        dt = cfl*dx/c
+
+        C = cfl
+        h = (c*dt)/C
+        dx = h
+
+        D = self.D2(N)/dx**2
+        
+        Un[:] = Unm1[:] + 0.5*(c*dt)**2*(D @ Unm1 + Unm1 @ D.T)
+        
+
+        for n in range(1, Nt):
+            Unp1[:] = 2*Un - Unm1 + (c*dt)**2*(D @ Un + Un @ D.T)
+            self.apply_bcs(Unp1)
+            
+            Unm1[:] = Un
+            Un[:] = Unp1
+
+
         raise NotImplementedError("The __call__ method is not implemented yet.")
 
     def convergence_rates(

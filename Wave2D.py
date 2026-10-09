@@ -192,6 +192,7 @@ class Wave2D:
 
         for n in range(1, Nt):
             Unp1[:] = 2*Un - Unm1 + (c*dt)**2*(D @ Un + Un @ D.T)
+
             self.apply_bcs(Unp1)
 
             Unm1[:] = Un
@@ -284,7 +285,7 @@ class Wave2D_Neumann(Wave2D):
         return sp.cos(mx * sp.pi * x) * sp.cos(my * sp.pi * y) * sp.cos(self.w * t)
 
     def apply_bcs(self, u: np.ndarray):
-        raise NotImplementedError("The apply_bcs method is not implemented yet.")
+        pass
 
 
 def test_convergence_wave2d():

@@ -186,16 +186,31 @@ class Wave2D:
         
         Un[:] = Unm1[:] + 0.5*(c*dt)**2*(D @ Unm1 + Unm1 @ D.T)
         
+        plotdata = {0: Unm1.copy()}
+        if store_data == 1:
+            plotdata[1] = Un.copy()
 
         for n in range(1, Nt):
             Unp1[:] = 2*Un - Unm1 + (c*dt)**2*(D @ Un + Un @ D.T)
             self.apply_bcs(Unp1)
-            
+
             Unm1[:] = Un
             Un[:] = Unp1
 
+            if n % store_data == 0:
+                plotdata[n] = Unm1.copy() # Unm1 is now swapped to Un
 
-        raise NotImplementedError("The __call__ method is not implemented yet.")
+        if store_data > 0:
+            return plotdata
+
+        elif store_data == -1:
+            t0 = Nt/2   # the middle of the simulation
+            n_t0 = round(t0)*dt
+            l2_err = self.l2_error(u[n_t0], t0)
+            return (h, l2_err)
+
+        else:
+            raise ValueError("store_data should be an integer, either positive or -1")
 
     def convergence_rates(
         self, m: int = 4, cfl: float = 0.1, Nt: int = 10, mx: int = 3, my: int = 3
@@ -238,10 +253,35 @@ class Wave2D:
 
 class Wave2D_Neumann(Wave2D):
     def D2(self, N: int) -> sparse.lil_matrix:
-        raise NotImplementedError("The D2 method is not implemented yet.")
+        """Return second order differentiation matrix
+
+        Parameters
+        ----------
+        N : int
+            The number of uniform intervals in each direction
+        Returns
+        -------
+        D : scipy sparse LIL matrix
+            The second order differentiation matrix
+        """
+        D = sparse.diags([1., -2., 1.], [-1, 0, 1], (N + 1, N + 1), format="lil")
+        D[0, :2] = -2, 2
+        D[-1, -2:] = 2, -2
+        return D
 
     def ue(self, mx: int, my: int) -> sp.Expr:
-        raise NotImplementedError("The ue method is not implemented yet.")
+        """Return the exact standing wave
+
+        Parameters
+        ----------
+        mx, my : int
+            Parameters for the standing wave
+        Returns
+        -------
+        ue : Sympy expression
+            The exact solution as a Sympy expression in x, y and t
+        """
+        return sp.cos(mx * sp.pi * x) * sp.cos(my * sp.pi * y) * sp.cos(self.w * t)
 
     def apply_bcs(self, u: np.ndarray):
         raise NotImplementedError("The apply_bcs method is not implemented yet.")

@@ -203,8 +203,8 @@ class Wave2D:
             return plotdata
 
         elif store_data == -1:
-            final_time = Nt*self.dt
-            l2_err = self.l2_error(Un, final_time)  # use current time point (remember loop is done)
+            i_Nt = Nt*self.dt
+            l2_err = self.l2_error(Unp1, i_Nt)  # use last time point (loop is done)
             return (self.h, l2_err)
 
         else:
@@ -297,6 +297,24 @@ def test_convergence_wave2d_neumann():
     assert abs(r[-1] - 2) < 0.05
 
 
-# def test_exact_wave2d():
-#     raise NotImplementedError("The test_exact_wave2d function is not implemented yet.")
+def test_exact_wave2d():
+    mx = my = 3
+    cfl = 1/np.sqrt(2)
+
+    sol = Wave2D()
+    
+    h, l2_err = sol(N=100, Nt=100, cfl=cfl, mx=mx, my=my, store_data=-1)
+
+    aa = sol.ue(mx=mx, my=my)
+
+    sp.lambdify((t, x, y), aa)(t0, xij, yij)
+
+
+# def plotter():
+#     sol = Wave2D()
+#     plotdata = sol(N=100, Nt=100, store_data=1)
+#     print(plotdata[0])
+#     import matplotlib.pyplot as plt
+#     plt.plot(plotdata[0][50,:])
+#     plt.show()
 

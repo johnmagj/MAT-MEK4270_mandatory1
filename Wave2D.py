@@ -297,29 +297,21 @@ def test_convergence_wave2d_neumann():
     assert abs(r[-1] - 2) < 0.05
 
 
-# def test_exact_wave2d():
-#     mx = my = 3
-#     cfl = 1/np.sqrt(2)
+def test_exact_wave2d():
+    mx = my = 3
+    cfl = 1/np.sqrt(2)
 
-#     N = 100
-#     Nt = 100
+    N = 100
+    Nt = 100
 
-#     sol = Wave2D()
-#     _, l2_err = sol(N=N, Nt=Nt, cfl=cfl, mx=mx, my=my, store_data=-1)
-#     assert abs(l2_err) < 1e-12
-
-
-# def plotter():
-#     sol = Wave2D()
-#     plotdata = sol(N=100, Nt=100, store_data=1)
-#     print(plotdata[0])
-#     import matplotlib.pyplot as plt
-#     plt.plot(plotdata[0][50,:])
-#     plt.show()
+    sol = Wave2D()
+    _, l2_err = sol(N=N, Nt=Nt, cfl=cfl, mx=mx, my=my, store_data=-1)
+    assert abs(l2_err) < 1e-12
 
 
 if __name__ == "__main__":
     test_convergence_wave2d()
     test_convergence_wave2d_neumann()
-    # test_exact_wave2d()
+    test_exact_wave2d()
     print("All tests passed!")
+

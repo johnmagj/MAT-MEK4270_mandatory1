@@ -217,7 +217,7 @@ class Poisson2D:
         dx = self.L/Nx
         dy = self.L/Ny
 
-        # Find the index (x,y) would have had given current grid step size
+        # Find the index that (x,y) would have had given current grid step size
         i_in = x/dx
         j_in = y/dy
 
